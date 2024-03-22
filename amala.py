@@ -1,6 +1,7 @@
 import os
 from argparse import ArgumentParser
 from src.imageProcessing import objectDetection
+from src.spatialProcessing import exif
 
 parser = ArgumentParser()
 parser.add_argument('imageDir', type=str, help='path/to/image/dir')
@@ -13,20 +14,24 @@ args = parser.parse_args()
 od = objectDetection(args.model, args.confThresh)
 od.load()
 
+e = exif(args.imageDir)
+
 ###MAIN LOOP###
 # Select image folder and loop through images performing inference
 for image in os.listdir(args.imageDir):
     imageFile = os.path.join(args.imageDir, image)
     classes, confidence, boxes = od.inference(imageFile)
-    print(classes)
-    print(confidence)
-    print(boxes)
 
 # Pull exif data from images, specifically need the following:
     # GPS location
     # flight height
     # Image resolution/pixels per image (if avail?)
     # Date/time of image
+    test = e.dataGrab(imageFile)
+    print(imageFile)
+    print(test)
+
+
 
 # Regenerate (x,y) image coordinates to create real UTM values
 
