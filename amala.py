@@ -1,7 +1,7 @@
 import os
 from argparse import ArgumentParser
 from src.imageProcessing import objectDetection
-from src.spatialProcessing import exif
+from src.spatialProcessing import exif, spatialProcess
 
 parser = ArgumentParser()
 parser.add_argument('imageDir', type=str, help='path/to/image/dir')
@@ -14,7 +14,9 @@ args = parser.parse_args()
 od = objectDetection(args.model, args.confThresh)
 od.load()
 
-e = exif(args.imageDir)
+e = exif()
+
+spatial = spatialProcess()
 
 ###MAIN LOOP###
 # Select image folder and loop through images performing inference
@@ -22,24 +24,19 @@ for image in os.listdir(args.imageDir):
     imageFile = os.path.join(args.imageDir, image)
     classes, confidence, boxes = od.inference(imageFile)
 
-# Pull exif data from images, specifically need the following:
-    # GPS location
-    # flight height
-    # Image resolution/pixels per image (if avail?)
-    # Date/time of image
-    test = e.dataGrab(imageFile)
-    print(imageFile)
+    # Pull exif data from images, specifically need the following:
+    rawExifData = e.dataGrab(imageFile)
+
+    # Regenerate (x,y) image coordinates to create real UTM values
+    test = spatial.frameDims(rawExifData)
     print(test)
+    
 
+    # Apply bbox center location to new UTM (x,y) values
 
+    # Generate .json file for each image
 
-# Regenerate (x,y) image coordinates to create real UTM values
-
-# Apply bbox center location to new UTM (x,y) values
-
-# Generate .json file for each image
-
-# Generate label image for assisted data entry
+    # Generate label image for assisted data entry
 
 ###Exit main loop###
 
