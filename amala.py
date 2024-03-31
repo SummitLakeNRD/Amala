@@ -12,10 +12,7 @@ args = parser.parse_args()
 
 # Grab computer specs and load neural network
 od = objectDetection(args.model, args.confThresh)
-od.load()
-
 e = exif()
-
 spatial = spatialProcess()
 
 ###MAIN LOOP###
@@ -27,10 +24,10 @@ for image in os.listdir(args.imageDir):
     # Pull exif data from images, specifically need the following:
     rawExifData = e.dataGrab(imageFile)
 
-    # Regenerate (x,y) image coordinates to create real UTM values
-    test = spatial.frameDims(rawExifData)
-    print(test)
-    
+    # Regenerate (x,y) image coordinates to create real UTM values for bird locations
+    spatial.frameDims(rawExifData)
+    rawExifData = spatial.utmConvert(rawExifData) 
+    birdCoordsUTM = spatial.pointUtmConvert(rawExifData, boxes)
 
     # Apply bbox center location to new UTM (x,y) values
 

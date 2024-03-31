@@ -5,16 +5,13 @@ from ultralytics import YOLO
 
 class objectDetection:
     def __init__(self, model, confThresh):
-        self.model = model
         self.confThresh = confThresh
         self.nmsThreshold = 0.3
-
-    def load(self):
-        self.model = YOLO(self.model, task='detect')
+        self.model = YOLO(model, task='detect')
         if cuda.is_available():
             self.proc = '0'
         else:
-            self.proc = 'cpu'
+            self.proc = 'cpu'       
 
     def inference(self, frame):
         results = self.model.predict(frame, conf = self.confThresh, iou=self.nmsThreshold, 
