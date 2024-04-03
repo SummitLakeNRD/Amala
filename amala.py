@@ -2,14 +2,13 @@ import os
 from argparse import ArgumentParser
 from src.imageProcessing import objectDetection
 from src.spatialProcessing import exif, spatialProcess
-from src.output import textOut
+from src.output import textOut, imageOut
 from datetime import datetime
 
 parser = ArgumentParser()
 parser.add_argument('imageDir', type=str, help='path/to/image/dir')
 parser.add_argument('confThresh', type=float, help='Confidence threshold value (0-1) for ')
 parser.add_argument('model', type=str, help='path/to/ai/file (ends with .pt)')
-parser.add_argument('outputDir', type=str, help='path/to/output/directory')
 args = parser.parse_args()
 
 
@@ -18,7 +17,9 @@ od = objectDetection(args.model, args.confThresh)
 exif = exif()
 spatial = spatialProcess()
 text = textOut()
+images = imageOut()
 counter = 0
+image_counter = 0
 
 ###MAIN LOOP###
 # Select image folder and loop through images performing inference
@@ -35,11 +36,11 @@ for image in os.listdir(args.imageDir):
     birdCoordsUTM, yoloCoords = spatial.pointUtmConvert(rawExifData, boxes) # returned in [easting, northing] format
 
     # Generate .json file for each image
-    counter = text.output(rawExifData, classes, confidence, 
-                          counter, birdCoordsUTM, yoloCoords)
+    counter, image_ids = text.output(rawExifData, classes, confidence, 
+                                     counter, birdCoordsUTM, yoloCoords)
 
     # Generate label image for assisted data entry
-    counter += 1
+    image_counter = images.output(imageFile, boxes, image_ids, image_counter)
 
 ###Exit main loop###
 
