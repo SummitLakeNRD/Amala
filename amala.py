@@ -2,12 +2,12 @@ import os
 from argparse import ArgumentParser
 from src.imageProcessing import objectDetection
 from src.spatialProcessing import exif, spatialProcess
-from src.output import textOut, imageOut
+from src.output import textOut, imageOut, createCSV
 from datetime import datetime
 
 parser = ArgumentParser()
 parser.add_argument('imageDir', type=str, help='path/to/image/dir')
-parser.add_argument('confThresh', type=float, help='Confidence threshold value (0-1) for ')
+parser.add_argument('confThresh', type=float, help='Confidence threshold value (0-1) for duck detection')
 parser.add_argument('model', type=str, help='path/to/ai/file (ends with .pt)')
 args = parser.parse_args()
 
@@ -18,8 +18,7 @@ exif = exif()
 spatial = spatialProcess()
 text = textOut()
 images = imageOut()
-counter = 0
-image_counter = 0
+csv = createCSV()
 
 ###MAIN LOOP###
 # Select image folder and loop through images performing inference
@@ -36,13 +35,12 @@ for image in os.listdir(args.imageDir):
     birdCoordsUTM, yoloCoords = spatial.pointUtmConvert(rawExifData, boxes) # returned in [easting, northing] format
 
     # Generate .json file for each image
-    counter, image_ids = text.output(rawExifData, classes, confidence, 
-                                     counter, birdCoordsUTM, yoloCoords)
+    image_ids = text.output(rawExifData, classes, confidence, 
+                            birdCoordsUTM, yoloCoords)
 
     # Generate label image for assisted data entry
-    image_counter = images.output(imageFile, boxes, image_ids, image_counter)
+    images.output(imageFile, boxes, image_ids)
 
 ###Exit main loop###
-
 # Generate .csv from json files generated in main loop
-
+csv.output()

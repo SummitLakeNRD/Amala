@@ -22,4 +22,3 @@ class objectDetection:
         boxes = [[int(i) for i in j] for j in results[0].boxes.xyxy]
 
         return classes, scores, boxes
-
