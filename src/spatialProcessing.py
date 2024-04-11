@@ -35,6 +35,7 @@ class spatialProcess:
         utmCoords = from_latlon(exifData['imageNorthing'], exifData['imageEasting'])
         exifData.update({'imageNorthing': utmCoords[1]})
         exifData.update({'imageEasting': utmCoords[0]})
+        exifData.update({'utmZone': utmCoords[2]})
         return exifData
     
     def pointUtmConvert(self, exifData, boxes):

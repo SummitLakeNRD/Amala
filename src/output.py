@@ -2,16 +2,15 @@ import json
 import cv2
 import csv
 import os
-from datetime import datetime
+from datetime import datetime, date
 from math import ceil
-from PIL import Image
 import numpy as np
 
 class textOut:
     def __init__(self):
         self.json = {}
         self.dateFormat = "%Y:%m:%d %H:%M:%S"
-        self.outputDir = os.path.join(os.getcwd(), "output")
+        self.outputDir = os.path.join(os.getcwd(), "output", "jsons")
         os.makedirs(self.outputDir, exist_ok=True)
         self.counter = 0
 
@@ -29,6 +28,7 @@ class textOut:
                          'species': "",
                          'birdNorthing': round(w[1], 2),
                          'birdEasting': round(w[0], 2),
+                         'utmZone': exifData['utmZone'],
                          'flightHeight_m': exifData['flightHeight_m'],
                          'pixelWidth': exifData['imageWidth'],
                          'pixelHeight': exifData['imageHeight'],
@@ -61,17 +61,32 @@ class imageOut:
                         ceil((i[3] + i[1]) / 2)] for i in bbox]
             frame = np.array(cv2.imread(frame))
             for a, b in zip(image_ids, centers):
-                image = cv2.putText(frame, a, (b[0] + 10, b[1] - 10), self.font, self.fontSize, 
+                image = cv2.putText(frame, a, (b[0] + 15, b[1] - 15), self.font, self.fontSize, 
                                     self.fontColor, self.thickness)
             cv2.imwrite(os.path.join(self.outputDir, imageName), image)
             self.image_counter += 1
-            
+
 class createCSV:
     def __init__(self):
         self.outputDir = os.path.join(os.getcwd(), "output")
+        self.dateFormat = "%Y:%m:%d %H:%M:%S"
+        self.seasons = {'spring': range(80, 172),
+                        'summer': range(172, 264),
+                        'fall': range(264, 355)}
 
-    def output(self):
-        csvFilename = "flight" + '_' + datetime.now().strftime("%m-%d-%Y_%H-%M-%S") + '.csv'
+    def output(self, exifData):
+        imageDate = datetime.strptime(exifData['dateTime'], self.dateFormat)
+        year = imageDate.year
+        julianDay = imageDate.timetuple().tm_yday
+        if julianDay in self.seasons['spring']:
+            season = 'spring'
+        elif julianDay in self.seasons['summer']:
+            season = 'summer'
+        elif julianDay in self.seasons['fall']:
+            season = 'fall'
+        else:
+            season = 'winter'
+        csvFilename = str(season) + '_' + str(year) + '_SWUAVSurvey' + '.csv'
         counter = 0
         for subdir, _, files in os.walk(self.outputDir):
             for file in files:

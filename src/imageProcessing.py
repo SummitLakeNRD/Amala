@@ -1,7 +1,6 @@
 from torch import cuda
 from ultralytics import YOLO
 
-
 class objectDetection:
     def __init__(self, model, confThresh):
         self.confThresh = confThresh
@@ -20,5 +19,4 @@ class objectDetection:
         classes = [self.classname[int(i)] for i in results[0].boxes.cls]
         scores = results[0].boxes.conf.tolist()
         boxes = [[int(i) for i in j] for j in results[0].boxes.xyxy]
-
         return classes, scores, boxes
