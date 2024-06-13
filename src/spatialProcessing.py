@@ -59,5 +59,6 @@ class spatialProcess:
         birdCoordsUTM = [[zeroCoord[0] + (j[0] * self.frameWidth_m), 
                           zeroCoord[1] - (j[1] * self.frameHeight_m)] for j in yoloCoords]
         # Applying rotation function to incorporate the compass bearing the drone is facing
-        birdCoordsUTM = [rotateCoord(exifData['imageEasting'], exifData['imageNorthing'], k[0], k[1], 90) for k in birdCoordsUTM]
+        birdCoordsUTM = [rotateCoord(exifData['imageEasting'], exifData['imageNorthing'], 
+                                     k[0], k[1], exifData['imageBearing']) for k in birdCoordsUTM]
         return birdCoordsUTM, yoloCoords
