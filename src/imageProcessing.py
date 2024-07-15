@@ -4,7 +4,7 @@ from ultralytics import YOLO
 class objectDetection:
     def __init__(self, model, confThresh):
         self.confThresh = confThresh
-        self.nmsThreshold = 0.3
+        self.nmsThreshold = 0.1
         self.model = YOLO(model, task='detect')
         self.classname = self.model.names
         if cuda.is_available():
