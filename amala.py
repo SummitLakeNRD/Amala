@@ -2,7 +2,7 @@ import os
 from argparse import ArgumentParser
 from src.imageProcessing import objectDetection
 from src.spatialProcessing import exif, spatialProcess
-from src.output import textOut, imageOut, createCSV
+from src.output import textOut, imageOut, createExcel
 
 parser = ArgumentParser()
 parser.add_argument('imageDir', type=str, help='path/to/image/dir')
@@ -16,7 +16,7 @@ exif = exif()
 spatial = spatialProcess()
 text = textOut()
 images = imageOut()
-csv = createCSV()
+excel = createExcel()
 
 ###MAIN LOOP###
 # Select image folder and loop through images performing inference
@@ -24,7 +24,7 @@ for image in os.listdir(args.imageDir):
     imageFile = os.path.abspath(os.path.join(args.imageDir, image))
     classes, confidence, boxes = od.inference(imageFile)
 
-    # Pull exif data from images, specifically need the following:
+    # Pull exif data from images
     rawExifData = exif.dataGrab(imageFile)
 
     # Generate (x,y) utm location of bird from relative image position and image GPS location
@@ -40,5 +40,5 @@ for image in os.listdir(args.imageDir):
     images.output(imageFile, boxes, image_ids)
 
 ###Exit main loop###
-# Generate .csv from json files generated in main loop
-csv.output(rawExifData)
+# Generate .xlsx in 'output' folder from the json files generated in main loop
+excel.output(rawExifData)

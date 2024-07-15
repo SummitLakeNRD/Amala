@@ -8,6 +8,7 @@ class objectDetection:
         self.model = YOLO(model, task='detect')
         self.classname = self.model.names
         if cuda.is_available():
+            # If pytorch is built with GPU backend, it will run on Nvidia GPU
             self.proc = '0'
         else:
             self.proc = 'cpu'      
