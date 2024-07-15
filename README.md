@@ -1,6 +1,6 @@
 # Amala
-**Author**: Keane Flynn
-**Contact**: kmflynn24@berkeley.edu
+**Author**: Keane Flynn\
+**Contact**: kmflynn24@berkeley.edu\
 Program to process drone images from Summit Lake SWUAV survey and identify waterfowl for supervised species classification
 
 ## How to Use
