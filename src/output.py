@@ -1,8 +1,10 @@
 import json
 import cv2
-import csv
+import pandas as pd
 import os
-from datetime import datetime, date
+from datetime import datetime
+from openpyxl import load_workbook
+from openpyxl.worksheet.datavalidation import DataValidation
 from math import ceil
 import numpy as np
 
@@ -16,6 +18,8 @@ class textOut:
 
     def output(self, exifData, classes, confidence,
                birdCoordinates, yoloCoordinates):
+        # Takes in output from neural network (AI) inference and 
+        # image EXIF data and returns a json file
         image_ids = []
         for w, x, y, z in zip(birdCoordinates, yoloCoordinates, 
                               classes, confidence):
@@ -29,6 +33,7 @@ class textOut:
                          'birdNorthing': round(w[1], 2),
                          'birdEasting': round(w[0], 2),
                          'utmZone': exifData['utmZone'],
+                         'imageBearing': exifData['imageBearing'],
                          'flightHeight_m': exifData['flightHeight_m'],
                          'pixelWidth': exifData['imageWidth'],
                          'pixelHeight': exifData['imageHeight'],
@@ -53,6 +58,8 @@ class imageOut:
         self.image_counter = 0
 
     def output(self, frame, bbox, image_ids):
+        # Generate output image that will be used for supervised
+        # species identification of positively identified waterfowl
         if len(bbox) == 0:
             return 0 
         else:
@@ -61,12 +68,12 @@ class imageOut:
                         ceil((i[3] + i[1]) / 2)] for i in bbox]
             frame = np.array(cv2.imread(frame))
             for a, b in zip(image_ids, centers):
-                image = cv2.putText(frame, a, (b[0] + 15, b[1] - 15), self.font, self.fontSize, 
+                image = cv2.putText(frame, a, (b[0] + 20, b[1] - 20), self.font, self.fontSize, 
                                     self.fontColor, self.thickness)
             cv2.imwrite(os.path.join(self.outputDir, imageName), image)
             self.image_counter += 1
 
-class createCSV:
+class createExcel:
     def __init__(self):
         self.outputDir = os.path.join(os.getcwd(), "output")
         self.dateFormat = "%Y:%m:%d %H:%M:%S"
@@ -75,6 +82,7 @@ class createCSV:
                         'fall': range(264, 355)}
 
     def output(self, exifData):
+        # Create label of season sample time from image date
         imageDate = datetime.strptime(exifData['dateTime'], self.dateFormat)
         year = imageDate.year
         julianDay = imageDate.timetuple().tm_yday
@@ -86,19 +94,35 @@ class createCSV:
             season = 'fall'
         else:
             season = 'winter'
-        csvFilename = str(season) + '_' + str(year) + '_SWUAVSurvey' + '.csv'
-        counter = 0
+
+        # Create Filename and blank dataframe for pandas excel formatting
+        excelFilename = str(season) + '_' + str(year) + '_SWUAVSurvey' + '.xlsx'
+        df = []
+
+        # Convert all json files to pandas dataframe and export to temp excel file
         for subdir, _, files in os.walk(self.outputDir):
             for file in files:
                 if file.endswith('.json'):
                     filename = os.path.join(subdir, file)
-                    with open(filename) as json_file:
-                        data = json.load(json_file)
-                    with open(os.path.join(self.outputDir, csvFilename), 'a', newline='') as f:
-                        csvWriter = csv.writer(f, escapechar = '\\')
-                        if counter == 0:
-                            header = data.keys()
-                            csvWriter.writerow(header)
-                            counter += 1
-                        csvWriter.writerow(data.values())
-        f.close()
+                    data = pd.read_json(filename, lines=True)
+                    df.append(data)
+        finalDF = pd.concat(df, ignore_index=True)
+        finalDF.to_excel(os.path.join('output', excelFilename), index=False)
+
+        # Reload excel file to add data validation (drop-down menu) to species column
+        # based on list of likely waterfowl in Summit Lake and then save
+        wb = load_workbook(os.path.join('output', excelFilename))
+        wbNames = load_workbook('src/summitWaterflowList.xlsx').active
+        wbNames._parent = wb
+        wbNames.title = 'birdNames'
+        wb._add_sheet(wbNames)
+        wb.save(os.path.join('output', excelFilename))
+        ws = wb.active
+        dv = DataValidation(type = "list", formula1='birdNames!$A$1:$A$93',
+                             allow_blank=True)
+        ws.add_data_validation(dv)
+        for row in range(2, ws.max_row + 1):
+            dv.add(ws[f'E{row}'])
+        wb.save(os.path.join('output', excelFilename))
+                    
+                    

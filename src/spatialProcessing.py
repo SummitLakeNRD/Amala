@@ -7,9 +7,11 @@ class exif:
         self.exifDict = {}
 
     def dataGrab(self, frame):
+        # Extract exif data from the images using exiftool package
+        # Note: I was only able to see all of the data using this tool,
+        # using other exif viewer options I couldn't see some relevant data
         with ExifToolHelper() as et:
             metadata = et.get_metadata(frame)[0]
-
         self.exifDict = {'imageFile': metadata['SourceFile'],
                          'dateTime': metadata['EXIF:DateTimeOriginal'],
                          'imageNorthing': metadata['Composite:GPSLatitude'],
@@ -18,7 +20,6 @@ class exif:
                          'imageWidth': int(metadata['EXIF:ExifImageWidth']),
                          'imageHeight': int(metadata['EXIF:ExifImageHeight']),
                          'flightHeight_m': float(metadata['XMP:RelativeAltitude'])}
-        
         return self.exifDict
     
 def rotateCoord(imageEasting, imageNorthing, birdEasting, birdNorthing, bearing):
@@ -35,12 +36,14 @@ class spatialProcess:
         self.degrees = self.hfov * 0.5 * math.pi / 180
 
     def frameDims(self, exifData):
+        # Extract dimensions of image 
         self.frameWidth_m = round(2 * math.tan(self.degrees) 
-                                  * exifData['flightHeight_m'], 2)
+                             * exifData['flightHeight_m'], 2)
         pixelSize_cmP = round(self.frameWidth_m / exifData['imageWidth'], 5)
         self.frameHeight_m = round(pixelSize_cmP * exifData['imageHeight'], 2)
 
     def utmConvert(self, exifData):
+        # Extract image location and convert to UTM zone 11 (NAD83)
         utmCoords = from_latlon(exifData['imageNorthing'], exifData['imageEasting'])
         exifData.update({'imageNorthing': utmCoords[1]})
         exifData.update({'imageEasting': utmCoords[0]})
@@ -48,6 +51,7 @@ class spatialProcess:
         return exifData
     
     def pointUtmConvert(self, exifData, boxes):
+        # Convert relative position of waterbird to georeferenced points in UTM points
         yoloCoords = [[(i[2] + i[0]) / 2 / exifData['imageWidth'], 
                        (i[3] + i[1]) / 2 / exifData['imageHeight'],
                        (i[2] - i[0]) / exifData['imageWidth'],
@@ -57,7 +61,7 @@ class spatialProcess:
                      # northing increases up in space and (0,0) is top left in image data
                      exifData['imageNorthing'] + (self.frameHeight_m / 2)] 
         birdCoordsUTM = [[zeroCoord[0] + (j[0] * self.frameWidth_m), 
-                          zeroCoord[1] - (j[1] * self.frameHeight_m)] for j in yoloCoords]
+                   zeroCoord[1] - (j[1] * self.frameHeight_m)] for j in yoloCoords]
         # Applying rotation function to incorporate the compass bearing the drone is facing
         birdCoordsUTM = [rotateCoord(exifData['imageEasting'], exifData['imageNorthing'], 
                                      k[0], k[1], exifData['imageBearing']) for k in birdCoordsUTM]
